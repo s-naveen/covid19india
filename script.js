@@ -10,8 +10,6 @@ var states_delta = 0;
 
 var numStatesInfected = 0;
 var all_data;
-var cases = [];
-
 
 var sort_field = 0;
 var sort_order;
@@ -61,45 +59,7 @@ function(result) {
 
     initMapStuff();
 
-    initChart();
-
 });
-
-$.getJSON("https://spreadsheets.google.com/feeds/cells/1nzXUdaIWC84QipdVGUKTiCSc5xntBbpMpzLm6Si33zk/"+ "4"+"/public/values?alt=json",
-function(result) {
-    entries = result["feed"]["entry"]
-    var dates = []
-    var total_confirmed = [];
-    entries.forEach(function(item) {
-        var row = item["gs$cell"]["row"] - 1;
-        if(row == 0) {
-            return;
-        }
-        if (cases[row] == null) {
-            cases[row] = [];
-        }
-
-        var col = (item["gs$cell"]["col"] - 1)
-
-        if(col==0) {
-            dates.push(moment((item["gs$cell"]["$t"]).trim(),"DD MMM"));
-
-        }
-
-        if(col==2) {
-            total_confirmed.push((item["gs$cell"]["$t"]).trim());
-
-        }
-    });
-    console.log(dates)
-
-    console.log(total_confirmed)
-
-    initChart(dates, total_confirmed);
-
-});
-
-
 
 function is_touch_device() {
     try {
@@ -320,70 +280,4 @@ function sort(column, event) {
     sort_order = sort_order == "A"? "D" : "A";
 
     constructTable(all_data);
-}
-
-
-function initChart(dates, total_confirmed) {
-
-
-var ctx = document.getElementById('myChart');
-
-Chart.defaults.global.elements.line.fill = false;
-Chart.defaults.global.tooltips.intersect = false;
-Chart.defaults.global.tooltips.mode = 'nearest';
-
-var myLineChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: dates,
-      datasets: [
-        {
-          data: total_confirmed,
-          label: "Total Confirmed",
-          borderColor: "#3e95cd",
-        }
-      ]
-    },
-    
-    options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    tooltips: {
-        yAlign: "bottom"
-    },
-    elements: {
-        point:{
-            radius: 0
-        }
-    },
-    scales: {
-        yAxes: [{
-            ticks: {
-                beginAtZero: true
-           }
-        }],xAxes: [{
-            type: 'time',
-            time: {
-                unit: 'day',
-                tooltipFormat: 'MMM DD',
-                stepSize: 7,
-                displayFormats: {
-                    'millisecond': 'MMM DD',
-                    'second': 'MMM DD',
-                    'minute': 'MMM DD',
-                    'hour': 'MMM DD',
-                    'day': 'MMM DD',
-                    'week': 'MMM DD',
-                    'month': 'MMM DD',
-                    'quarter': 'MMM DD',
-                    'year': 'MMM DD',
-                    },
-            },
-            gridLines: {
-                color: "rgba(0, 0, 0, 0)",
-            }
-        }],
-    }
-}
-});
 }
