@@ -10,6 +10,7 @@ var states_delta = 0;
 
 var numStatesInfected = 0;
 var all_data;
+var cases = [];
 
 var sort_field = 0;
 var sort_order;
@@ -59,6 +60,115 @@ function(result) {
 
     initMapStuff();
 
+});
+
+$.getJSON("https://spreadsheets.google.com/feeds/cells/1nzXUdaIWC84QipdVGUKTiCSc5xntBbpMpzLm6Si33zk/"+ "o6emnqt"+"/public/values?alt=json",
+function(result) {
+    entries = result["feed"]["entry"]
+    var dates = []
+    var total_confirmed = [];
+    var daily_confirmed = [];
+    var daily_recovered = [];
+    var total_recovered = [];
+    var daily_deceased = [];
+    var total_deceased = [];
+    entries.forEach(function(item) {
+        var row = item["gs$cell"]["row"] - 1;
+        if(row == 0) {
+            return;
+        }
+        if (cases[row] == null) {
+            cases[row] = [];
+        }
+
+        var col = (item["gs$cell"]["col"] - 1)
+
+        if(col==0) {
+            dates.push(moment((item["gs$cell"]["$t"]).trim(),"DD MMM"));
+
+        }
+
+        if(col==1) {
+            daily_confirmed.push((item["gs$cell"]["$t"]).trim());
+        }
+
+        if(col==2) {
+            total_confirmed.push((item["gs$cell"]["$t"]).trim());
+        }
+
+        if(col==3) {
+            daily_recovered.push((item["gs$cell"]["$t"]).trim());
+        }
+
+        if(col==4) {
+            total_recovered.push((item["gs$cell"]["$t"]).trim());
+        }
+
+        if(col==5) {
+            daily_deceased.push((item["gs$cell"]["$t"]).trim());
+        }
+
+        if(col==6) {
+            total_deceased.push((item["gs$cell"]["$t"]).trim());
+        }
+
+    });
+
+    initChartLite(dates, {
+        container: "confirmed_chart",
+        label: "Confirmed",
+        data: daily_confirmed,
+        line_color: "#3e95cd"
+    });
+
+    initChartLite(dates, {
+        container: "death_chart",
+        label: "Deceased",
+        data: daily_deceased,
+        line_color: "#c62828"
+    }); 
+
+    mergedChart(dates, {
+        container: "total_charts",
+        title: "Cumulative Trend",
+        y_axis_label: "Total Cases",
+        data: [
+        {
+            label: "Total Confirmed",
+            data: total_confirmed,
+            line_color: "#3e95cd",
+        },
+        {
+            label: "Total Confirmed",
+            data: total_recovered,
+            line_color: "#009688" ,
+        },{
+            label: "Total Deceased",
+            data: total_deceased,
+            line_color: "#c62828",
+        }
+        ]});
+
+    mergedChart(dates, {
+        container: "daily_charts",
+        title: "Daily Trend",
+        y_axis_label: "Daily Cases",
+        data: [
+        {
+            label: "Daily Confirmed",
+            data: daily_confirmed,
+            line_color: "#3e95cd",
+        },
+        {
+            label: "Daily Recovered",
+            data: daily_recovered,
+            line_color: "#009688" ,
+        },{
+            label: "Daily Deceased",
+            data: daily_deceased,
+            line_color: "#c62828",
+        }
+    ]});
 });
 
 function is_touch_device() {
@@ -281,3 +391,269 @@ function sort(column, event) {
 
     constructTable(all_data);
 }
+
+
+
+function initChart(dates, options) {
+
+
+    var ctx = document.getElementById(options.container);
+    
+    Chart.defaults.global.elements.line.fill = false;
+    Chart.defaults.global.tooltips.intersect = false;
+    Chart.defaults.global.tooltips.mode = 'nearest';
+    Chart.defaults.global.tooltips.position = 'nearest';
+    Chart.defaults.global.legend.display = false;
+    Chart.defaults.global.title.text=options.label;
+    Chart.defaults.global.title.display=true;
+    Chart.defaults.global.title.padding=35;
+    Chart.defaults.global.title.fontSize=15;
+    Chart.defaults.global.elements.line.tension=0.3;
+    var max_value = Math.max(...options.data)
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: [
+            {
+              data: options.data,
+              label: options.label,
+              borderColor: options.line_color,
+            }
+          ]
+        },
+        
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        tooltips: {
+            yAlign: "bottom",
+        },
+        elements: {
+            point:{
+                radius: 0
+            }
+        },
+        scales: {
+            yAxes: [{
+                ticks: {
+                    beginAtZero: true,
+                    suggestedMax: max_value + (max_value * 5 / 100),
+                    precision:0,
+                    callback : function(value,index,values){
+                        console.log(value, index, values);
+                        return value;
+                    }
+               },
+               scaleLabel: {
+                display: true,
+                labelString: options.label + " cases"
+            }
+            }],xAxes: [{
+                type: 'time',
+                time: {
+                    unit: 'day',
+                    tooltipFormat: 'MMM DD',
+                    stepSize: 7,
+                    displayFormats: {
+                        'millisecond': 'MMM DD',
+                        'second': 'MMM DD',
+                        'minute': 'MMM DD',
+                        'hour': 'MMM DD',
+                        'day': 'MMM DD',
+                        'week': 'MMM DD',
+                        'month': 'MMM DD',
+                        'quarter': 'MMM DD',
+                        'year': 'MMM DD',
+                        },
+                },
+                gridLines: {
+                    color: "rgba(0, 0, 0, 0)",
+                }
+            }],
+        }
+    }
+    });
+    }
+
+    function mergedChart(dates, options) {
+        var ctx = document.getElementById(options.container);
+    
+    Chart.defaults.global.elements.line.fill = false;
+    Chart.defaults.global.tooltips.intersect = false;
+    Chart.defaults.global.tooltips.mode = 'nearest';
+    Chart.defaults.global.tooltips.displayColors = true;
+    Chart.defaults.global.tooltips.position = 'nearest';
+    Chart.defaults.global.title.text=options.title;
+    Chart.defaults.global.title.display=true;
+    Chart.defaults.global.legend.display=true;
+    Chart.defaults.global.title.padding=35;
+    Chart.defaults.global.title.fontSize=15;
+    
+    var datasets = [];
+    options.data.forEach(item => {
+        datasets.push({
+            data: item.data,
+            label: item.label,
+            borderColor: item.line_color,
+            maxValue: Math.max(...item.data)
+        })
+    });
+
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: datasets
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        tooltips: {
+            mode: 'index',
+            yAlign: "bottom",
+        },
+        elements: {
+            point:{
+                radius: 0
+            }
+        },
+        scales: {
+            yAxes: [{
+                ticks: {
+                    beginAtZero: true,
+                    precision:0
+               },
+               scaleLabel: {
+                display: true,
+                labelString: options.y_axis_label
+            }
+            
+            }],xAxes: [{
+                type: 'time',
+                time: {
+                    unit: 'day',
+                    tooltipFormat: 'MMM DD',
+                    stepSize: 7,
+                    displayFormats: {
+                        'millisecond': 'MMM DD',
+                        'second': 'MMM DD',
+                        'minute': 'MMM DD',
+                        'hour': 'MMM DD',
+                        'day': 'MMM DD',
+                        'week': 'MMM DD',
+                        'month': 'MMM DD',
+                        'quarter': 'MMM DD',
+                        'year': 'MMM DD',
+                        },
+                },
+                gridLines: {
+                    color: "rgba(0, 0, 0, 0)",
+                }
+            }],
+        }
+    }
+    });
+    }
+
+    
+    function initChartLite(dates, options) {
+        var ctx = document.getElementById(options.container);
+        
+        Chart.defaults.global.elements.line.fill = false;
+        Chart.defaults.global.tooltips.intersect = false;
+        Chart.defaults.global.tooltips.mode = 'nearest';
+        Chart.defaults.global.tooltips.position = 'average';
+        Chart.defaults.global.tooltips.backgroundColor = 'rgba(255, 255, 255, 0.6)';
+        Chart.defaults.global.tooltips.displayColors = false;
+        Chart.defaults.global.tooltips.borderColor = options.line_color;
+        Chart.defaults.global.tooltips.borderWidth = 1;
+        Chart.defaults.global.tooltips.titleFontColor = '#000';
+        Chart.defaults.global.tooltips.bodyFontColor = '#000';
+        Chart.defaults.global.tooltips.caretPadding = 4;
+
+        Chart.defaults.global.legend.display = false;
+        Chart.defaults.global.title.display=false;
+        Chart.defaults.global.title.padding=35;
+        Chart.defaults.global.title.fontSize=15;
+        Chart.defaults.global.hover.intersect = false;
+
+        var max_value = Math.max(...options.data)
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: dates,
+              datasets: [
+                {
+                  data: options.data,
+                  label: options.label,
+                  borderColor: options.line_color,
+                }
+              ]
+            },
+            
+            options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: {
+                    left: 0,
+                    right: 10,
+                    top: 0,
+                    bottom: 0
+                }
+            },
+            tooltips: {
+                mode: 'x',
+                position: 'nearest',
+            },
+            elements: {
+                point:{
+                    radius: 0
+                }
+            },
+            scales: {
+                yAxes: [{
+                    drawBorder: false,
+                    ticks: {
+                        display: false,
+                        beginAtZero: true,
+                        suggestedMax: max_value + (max_value * 5 / 100),
+                        precision:0,
+                   },
+                   gridLines: {
+                    display: false,
+                       color: "rgba(0, 0, 0, 0)",
+                }
+                }],xAxes: [{
+                    drawBorder: false,
+                    type: 'time',
+                    ticks: {
+                        display: false
+                    },
+                    time: {
+                        unit: 'day',
+                        tooltipFormat: 'MMM DD',
+                        stepSize: 1,
+                        displayFormats: {
+                            'millisecond': 'MMM DD',
+                            'second': 'MMM DD',
+                            'minute': 'MMM DD',
+                            'hour': 'MMM DD',
+                            'day': 'MMM DD',
+                            'week': 'MMM DD',
+                            'month': 'MMM DD',
+                            'quarter': 'MMM DD',
+                            'year': 'MMM DD',
+                            },
+                    },
+                    gridLines: {
+                        display: false,
+                        color: "rgba(0, 0, 0, 0)",
+                    }
+                }],
+            }
+        }
+        });
+        }
