@@ -247,18 +247,7 @@ body.embed span.embed-show{
     display: flex;
 }
 
-.social-img {
-    margin-top: 18px;
-}
-
-.inst {
-    width: 25px;
-    height: 25px;
-    margin-right: 0px;
-}
-
 .tw {
-    width: 25px;
-    height: 25px;
+    margin-top: 20px;
     margin-right: 8px;
 }
