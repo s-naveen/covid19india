@@ -233,10 +233,6 @@ body.embed .embed-show{
 body.embed span.embed-show{
     display:inline
 }
-
-.inline {
-    display: inline-block;
-}
  
 .header-container {
     display: flex;
